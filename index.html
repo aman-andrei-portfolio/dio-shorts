@@ -98,7 +98,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let DAYS=[], cur=null;
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1800)}
 function niceDate(d){const [y,m,dd]=d.split('-').map(Number);const dt=new Date(y,m-1,dd),t=new Date();t.setHours(0,0,0,0);
-  const diff=Math.round((t-dt)/864e5);if(diff===0)return'Azi';if(diff===1)return'Ieri';
+  const diff=Math.round((t-dt)/864e5);if(diff===0)return'Azi';if(diff===1)return'Ieri';if(diff===-1)return'Mâine';
   return dt.toLocaleDateString('ro-RO',{weekday:'short',day:'numeric',month:'short'})}
 function kf(n){if(n==null)return '—';if(n>=1e6)return (n/1e6).toFixed(1).replace('.0','')+'M';if(n>=1e3)return (n/1e3).toFixed(1).replace('.0','')+'K';return String(n)}
 function mb(b){return b?(b/1048576).toFixed(0)+' MB':''}
@@ -112,12 +112,11 @@ async function load(){
   try{const r=await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=60`,{cache:'no-store'});if(!r.ok)throw 0;rel=await r.json();lsSet('rel',{t:Date.now(),rel})}
   catch(e){const c=lsGet('rel');rel=c?c.rel:[]}
   const t=new Date(),today=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
-  // zilele viitoare (reels programate) apar abia în ziua lor; descărcările vin din contorul GitHub al fișierului
-  DAYS=(rel||[]).filter(r=>r.tag_name&&r.tag_name.startsWith('zi-')&&r.tag_name.slice(3)<=today).map(r=>{
+  // fiecare zi = o secțiune cu max 3 reels (și zilele următoare apar imediat); descărcările vin din contorul GitHub
+  DAYS=(rel||[]).filter(r=>r.tag_name&&r.tag_name.startsWith('zi-')).map(r=>{
     const dl={};(r.assets||[]).forEach(a=>dl[a.browser_download_url]=a.download_count||0);
-    return {date:r.tag_name.slice(3),reels:parse(r.body).map(x=>({...x,dl:dl[x.video]||0}))}}).filter(d=>d.reels.length).sort((a,b)=>b.date.localeCompare(a.date));
-  $('upd').textContent=new Date().toLocaleString('ro-RO',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});
-  const want=location.hash.slice(1);cur=DAYS.find(d=>d.date===want)?want:DAYS[0]?.date;draw();
+    return {date:r.tag_name.slice(3),reels:parse(r.body).map(x=>({...x,dl:dl[x.video]||0}))}}).filter(d=>d.reels.length).sort((a,b)=>b.date.localeCompare(a.date));  $('upd').textContent=new Date().toLocaleString('ro-RO',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});
+  const want=location.hash.slice(1);cur=DAYS.find(d=>d.date===want)?want:(DAYS.find(d=>d.date===today)||DAYS.find(d=>d.date<today)||DAYS[DAYS.length-1])?.date;draw();
 }
 function draw(){
   $('days').innerHTML=DAYS.map(d=>`<button class="day ${d.date===cur?'on':''}" onclick="pick('${d.date}')">${niceDate(d.date)}<small>${d.reels.length}</small></button>`).join('');
