@@ -115,7 +115,7 @@ async function load(){
   // fiecare zi = o secțiune cu max 3 reels (și zilele următoare apar imediat); descărcările vin din contorul GitHub
   DAYS=(rel||[]).filter(r=>r.tag_name&&r.tag_name.startsWith('zi-')).map(r=>{
     const dl={};(r.assets||[]).forEach(a=>dl[a.browser_download_url]=a.download_count||0);
-    return {date:r.tag_name.slice(3),reels:parse(r.body).map(x=>({...x,dl:dl[x.video]||0}))}}).filter(d=>d.reels.length).sort((a,b)=>b.date.localeCompare(a.date));  $('upd').textContent=new Date().toLocaleString('ro-RO',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});
+    return {date:r.tag_name.slice(3),reels:parse(r.body).map(x=>({...x,dl:dl[x.video]||0}))}}).filter(d=>d.reels.length).sort((a,b)=>{const fa=a.date>=today,fb=b.date>=today;if(fa!==fb)return fa?-1:1;return fa?a.date.localeCompare(b.date):b.date.localeCompare(a.date)});  $('upd').textContent=new Date().toLocaleString('ro-RO',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});
   const want=location.hash.slice(1);cur=DAYS.find(d=>d.date===want)?want:(DAYS.find(d=>d.date===today)||DAYS.find(d=>d.date<today)||DAYS[DAYS.length-1])?.date;draw();
 }
 function draw(){
