@@ -135,7 +135,6 @@ function card(r,i){
       ${r.type?`<span class="tag">${esc(TYPES[r.type]||r.type)}</span>`:''}${r.duration?`<span class="len">${Math.round(r.duration)}s</span>`:''}</div>
     <div class="body">
       <div class="title">${esc(r.title)}</div>
-      ${r.views&&r.views.total?`<div class="views"><b>👁 ${kf(r.views.total)}</b>${['yt','tt','ig'].filter(k=>r.views[k]!=null).map(k=>`<span class="vp ${k}">${({yt:'YouTube',tt:'TikTok',ig:'Instagram'})[k]} ${kf(r.views[k])}</span>`).join('')}</div>`:''}
       <a class="dl" href="${esc(r.video)}" download>⬇ Descarcă video <small>${mb(r.size)}</small></a>
       <div class="tabs" id="t${i}">
         <button data-p="tt" class="on" onclick="tab(${i},'tt')">TikTok</button>
