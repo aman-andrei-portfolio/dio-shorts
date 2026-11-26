@@ -120,7 +120,9 @@ function parse(body){const m=/<!--DIO-DATA\s*([\s\S]*?)\s*DIO-DATA-->/.exec(body
 function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
 function cd(ms){const s=Math.max(0,Math.round((ms-Date.now())/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')}
 // descărcat = contorul GitHub (vine cu o mică întârziere) sau apăsat aici, pe acest telefon / calculator
-function expiry(r){if(r.expires_at)return r.expires_at;const got=(ls('got')||{})[r.id];return got&&EXPIRE_MIN?got+EXPIRE_MIN*60000:null}
+function expiry(r){if(r.expires_at)return r.expires_at;const got=(ls('got')||{})[r.id];
+  if(!got||!EXPIRE_MIN||Date.now()-got>10*60000)return null;  // neconfirmat de server în 10 min → nu-l mai arăt ca descărcat
+  return got+EXPIRE_MIN*60000}
 function state(r){const ex=expiry(r);if(ex)return ex>Date.now()?'soon':'gone';if(r.dl>0)return 'old';return r.date>today()?'later':'new'}
 
 async function load(first){
@@ -129,7 +131,7 @@ async function load(first){
   try{const r=await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=60`,{cache:'no-store'});if(!r.ok)throw 0;rel=await r.json();ls('rel',{t:Date.now(),rel})}
   catch(e){const c=ls('rel');rel=c?c.rel:[]}
   ALL=[];(rel||[]).filter(r=>r.tag_name&&r.tag_name.startsWith('zi-')).forEach(r=>{const dl={};(r.assets||[]).forEach(a=>dl[a.browser_download_url]=a.download_count||0);
-    parse(r.body).forEach(x=>ALL.push({...x,date:r.tag_name.slice(3),dl:dl[x.video]||0}))});
+    parse(r.body).forEach(x=>ALL.push({...x,date:r.tag_name.slice(3),dl:Math.max(0,(dl[x.video]||0)-(x.dl_base||0))}))});
   $('upd').textContent='actualizat '+new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'});
   draw()}
 function groups(){const g={new:[],soon:[],later:[],old:[]};ALL.forEach(r=>{const s=state(r);if(g[s])g[s].push(r)});
