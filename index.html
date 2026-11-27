@@ -105,6 +105,11 @@ details.txt[open] summary{color:var(--text)}
 .sk{background:linear-gradient(90deg,var(--card) 0,var(--card2) 50%,var(--card) 100%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:var(--r);aspect-ratio:9/16}
 @keyframes sh{to{background-position:-200% 0}}
 footer{color:var(--dim);font-size:12.5px;text-align:center;padding:40px 0 50px}
+/* video lungi (16:9) */
+.grid.wide{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+.player.w{aspect-ratio:16/9}
+.reel .sub{font-size:12.5px;color:var(--dim);padding:0 4px;margin-top:-8px}
+.row.w{grid-template-columns:78px minmax(0,1fr) auto}.row.w .ph{width:78px;aspect-ratio:16/9}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#f4f4f5;color:#111;font-weight:700;padding:12px 18px;border-radius:14px;opacity:0;transition:.22s;pointer-events:none;z-index:40;max-width:calc(100vw - 32px);text-align:center;box-shadow:0 20px 50px -20px #000}
 .toast.on{opacity:1;transform:translateX(-50%)}
 @media (max-width:720px){.row{gap:10px;padding:10px 12px}.row .gone{max-width:96px;font-size:11.5px}.row .t{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}.row .gone small{font-size:10.5px}.stats{gap:8px}.stat{padding:10px 12px}.stat b{font-size:24px}.stat span{white-space:normal;font-size:11.5px;line-height:1.3}.top .wrap{flex-wrap:wrap;padding-top:10px;padding-bottom:10px}.nav{order:3;width:100%;overflow-x:auto}.grid{grid-template-columns:1fr}.banner{flex-wrap:wrap}.banner .t{margin-left:0}}
@@ -127,7 +132,7 @@ footer{color:var(--dim);font-size:12.5px;text-align:center;padding:40px 0 50px}
 <div class="toast" id="toast"></div>
 <script>
 const REPO="aman-andrei-portfolio/dio-shorts", SOCIALS=[{"name": "Kick", "handle": "@dio-official", "url": "https://kick.com/dio-official"}, {"name": "Discord", "handle": "@DIO HUB", "url": "https://discord.gg/ZsY2G9gy43"}, {"name": "TikTok", "handle": "@dio.offiicial", "url": "https://www.tiktok.com/@dio.offiicial"}, {"name": "Instagram", "handle": "@dio_offiicial", "url": "https://www.instagram.com/dio_offiicial/"}], EXPIRE_MIN=+"90"||0, HISTORY_DAYS=+"14"||14;
-const TYPES={amuzant:'Amuzant',funny:'Amuzant',react:'Reacție',reaction:'Reacție',reactie:'Reacție',epic:'Epic',din_suflet:'Din suflet',motivational:'Motivațional',wholesome:'Wholesome',dezbatere:'Discuție'};
+const TYPES={long:'Video lung',amuzant:'Amuzant',funny:'Amuzant',react:'Reacție',reaction:'Reacție',reactie:'Reacție',epic:'Epic',din_suflet:'Din suflet',motivational:'Motivațional',wholesome:'Wholesome',dezbatere:'Discuție'};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ALL=[],VIEW=(location.hash||'#nou').slice(1),DONE={},ITEMS={};
@@ -136,7 +141,9 @@ function today(){const t=new Date();return `${t.getFullYear()}-${String(t.getMon
 function niceDate(d){const [y,m,dd]=d.split('-').map(Number);const dt=new Date(y,m-1,dd),t=new Date();t.setHours(0,0,0,0);
   const diff=Math.round((t-dt)/864e5);if(diff===0)return'Azi';if(diff===1)return'Ieri';if(diff===-1)return'Mâine';
   return dt.toLocaleDateString('ro-RO',{weekday:'short',day:'numeric',month:'short'})}
-function mb(b){return b?(b/1048576).toFixed(0)+' MB':''}
+function mb(b){return !b?'':b>=1e9?(b/1073741824).toFixed(1).replace('.',',')+' GB':(b/1048576).toFixed(0)+' MB'}
+const isLong=r=>!!r&&(r.kind==='long'||/-long$/.test(r.id||''));
+function dur(s){return !s?'':s>=90?Math.round(s/60)+' min':Math.round(s)+'s'}
 function parse(body){const m=/<!--DIO-DATA\s*([\s\S]*?)\s*DIO-DATA-->/.exec(body||'');try{return m?JSON.parse(m[1]):[]}catch(e){return[]}}
 function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
 function cd(ms){const s=Math.max(0,Math.round((ms-Date.now())/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')}
@@ -157,11 +164,12 @@ async function load(first){
   catch(e){const c=ls('stats2')||{};DONE=c.d||{};ITEMS=c.i||{}}
   $('upd').textContent='actualizat '+new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'});
   draw()}
-function groups(){const g={new:[],soon:[],later:[],old:[]};ALL.forEach(r=>{const s=state(r);if(g[s])g[s].push(r)});
+function longs(){return ALL.filter(r=>isLong(r)&&state(r)!=='gone').sort((a,b)=>(state(a)==='soon')-(state(b)==='soon')||b.date.localeCompare(a.date))}
+function groups(){const g={new:[],soon:[],later:[],old:[]};ALL.forEach(r=>{if(isLong(r))return;const s=state(r);if(g[s])g[s].push(r)});
   g.new.sort((a,b)=>b.date.localeCompare(a.date));g.soon.sort((a,b)=>expiry(a)-expiry(b));g.later.sort((a,b)=>a.date.localeCompare(b.date));g.old.sort((a,b)=>b.date.localeCompare(a.date));return g}
-function draw(){const g=groups();stats();
-  if(!['nou','descarcate','programate'].includes(VIEW))VIEW='nou';
-  $('nav').innerHTML=[['nou','De descărcat',g.new.length],['descarcate','Descărcate',Object.keys(allDone()).length],['programate','Programate',g.later.length]]
+function draw(){const g=groups(),lg=longs();stats();
+  if(!['nou','lungi','descarcate','programate'].includes(VIEW))VIEW='nou';
+  $('nav').innerHTML=[['nou','De descărcat',g.new.length],['lungi','Video lungi',lg.filter(r=>!expiry(r)).length],['descarcate','Descărcate',Object.keys(allDone()).length],['programate','Programate',g.later.length]]
     .map(([k,l,n])=>`<button class="${VIEW===k?'on':''}" onclick="go('${k}')">${l}<em>${n}</em></button>`).join('');
   $('banner').innerHTML=g.soon.length?`<div class="banner"><div class="ic">⏳</div><div><b>${g.soon.length===1?'Ai descărcat un reel.':`Ai descărcat ${g.soon.length} reels.`}</b> Postează-${g.soon.length===1?'l':'le'} acum: ${g.soon.length===1?'dispare':'dispar'} de pe site după ${EXPIRE_MIN} de minute de la descărcare.</div><div class="t" data-exp="${expiry(g.soon[0])}">${cd(expiry(g.soon[0]))}</div></div>`:'';
   let h='';
@@ -169,8 +177,10 @@ function draw(){const g=groups();stats();
       (g.new.length?`<div class="grid">${g.new.map((r,i)=>card(r,i)).join('')}</div>`:`<div class="empty"><b>Le-ai luat pe toate 🎉</b>Reelurile noi apar aici singure.</div>`)+`</section>`;
     if(g.soon.length)h+=`<section><div class="sh"><h2>Descărcate · dispar curând</h2><span>postează-le până expiră</span></div><div class="grid">${g.soon.map((r,i)=>card(r,i+100)).join('')}</div></section>`}
   if(VIEW==='descarcate'){h+=g.soon.length?`<section><div class="sh"><h2>Dispar curând</h2><span>${g.soon.length}</span></div><div class="grid">${g.soon.map((r,i)=>card(r,i)).join('')}</div></section>`:'';
-    const hh=dlHistory();h+=`<section><div class="sh"><h2>Toate descărcările</h2><span>${hh.length} ${hh.length===1?'reel':'reels'} în total · evidență pe zile</span></div>
+    const hh=dlHistory(),hl=hh.filter(isLong).length;h+=`<section><div class="sh"><h2>Toate descărcările</h2><span>${[hh.length-hl,hl].some(Boolean)?[hh.length-hl?`${hh.length-hl} ${hh.length-hl===1?'reel':'reels'}`:'',hl?`${hl} ${hl===1?'video lung':'video lungi'}`:''].filter(Boolean).join(' + '):'0 reels'} în total · evidență pe zile</span></div>
       <div class="hnote">După descărcare, <b>fișierul mare (2K) se șterge de pe site</b> ca să nu se umple memoria site-ului (are o limită de 1 GB). <b>Coperta, titlul și data rămân aici</b> pentru evidență; previzualizarea (▶) se poate vedea ${HISTORY_DAYS} zile.</div>${hist(hh)}</section>`}
+  if(VIEW==='lungi')h+=`<section><div class="sh"><h2>Video lungi</h2><span>16:9, pentru YouTube · ${lg.length} ${lg.length===1?'video':'videouri'} · după descărcare ${EXPIRE_MIN?`dispar în ${EXPIRE_MIN} min`:'rămân'}</span></div>`+
+    (lg.length?`<div class="grid wide">${lg.map((r,i)=>card(r,i)).join('')}</div>`:`<div class="empty"><b>Niciun video lung acum</b>Videourile lungi (15–20 min) apar aici când sunt gata.</div>`)+`</section>`;
   if(VIEW==='programate')h+=`<section><div class="sh"><h2>Programate</h2><span>apar în zilele următoare</span></div>${g.later.length?list(g.later,true):`<div class="empty"><b>Nimic programat</b>Reelurile pentru zilele următoare apar aici.</div>`}</section>`;
   $('main').innerHTML=h}
 // contorul: toate reelurile descărcate vreodată (și cele scoase deja de pe site) + cele de acum
@@ -181,22 +191,23 @@ function dlHistory(){const on={};ALL.forEach(r=>on[r.id]=r);
     return {id,t:+t,r,poster:(r&&r.poster)||m.poster,preview:(r&&r.preview)||m.preview,approx:!!m.approx&&!(r&&r.downloaded_at),title:(r&&r.title)||m.title||'Reel',type:(r&&r.type)||m.type,duration:(r&&r.duration)||m.duration}})
     .sort((a,b)=>(a.approx-b.approx)||(b.t-a.t))}
 function hist(h){if(!h.length)return `<div class="empty"><b>Nimic aici</b>Reelurile descărcate apar aici.</div>`;
-  const dk=x=>{if(x.approx)return'~';const d=new Date(x.t);return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()},cnt={};h.forEach(x=>{const k=dk(x);cnt[k]=(cnt[k]||0)+1});
+  const dk=x=>{if(x.approx)return'~';const d=new Date(x.t);return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()},cnt={};h.forEach(x=>{const k=dk(x);cnt[k]=cnt[k]||[0,0];cnt[k][isLong(x)?1:0]++});
+  const many=([r,l])=>[r?`${r} ${r===1?'reel':'reels'}`:'',l?`${l} ${l===1?'video lung':'video lungi'}`:''].filter(Boolean).join(' + ');
   const up=t=>t.charAt(0).toUpperCase()+t.slice(1),until=Math.max(0,...h.filter(x=>x.approx).map(x=>x.t));
   let out='',last='';h.forEach(x=>{const k=dk(x);
     if(k!==last){last=k;const lbl=x.approx?`Până pe ${new Date(until).toLocaleDateString('ro-RO',{day:'numeric',month:'long'})} · data exactă nu se știe`
         :up(new Date(x.t).toLocaleDateString('ro-RO',{weekday:'long',day:'numeric',month:'long'}));
-      out+=`<div class="day"><span>${esc(lbl)}</span><em>${cnt[k]} ${cnt[k]===1?'reel':'reels'}</em></div>`}
+      out+=`<div class="day"><span>${esc(lbl)}</span><em>${many(cnt[k])}</em></div>`}
     const r=x.r,hr=x.t&&!x.approx?new Date(x.t).toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}):'';
     const ph=x.poster?(x.preview?`<a class="ph pv" href="${esc(x.preview)}" onclick="event.preventDefault();pv('${esc(x.preview)}')" style="background-image:url('${esc(x.poster)}')"></a>`
       :`<div class="ph" style="background-image:url('${esc(x.poster)}')"></div>`):`<div class="ph none">✓</div>`;
-    out+=`<div class="row">${ph}
-      <div style="min-width:0"><div class="t">${esc(x.title)}</div><div class="s">${[TYPES[x.type]||x.type,x.duration?Math.round(x.duration)+'s':'',hr&&'descărcat la '+hr].filter(Boolean).map(esc).join(' · ')}</div></div>
+    out+=`<div class="row${isLong(x)?' w':''}">${ph}
+      <div style="min-width:0"><div class="t">${esc(x.title)}</div><div class="s">${[TYPES[x.type]||x.type,dur(x.duration),hr&&'descărcat la '+hr].filter(Boolean).map(esc).join(' · ')}</div></div>
       ${r?`<a href="${esc(r.video)}" download onclick="got('${esc(r.id)}')">⬇ ${mb(r.size)}</a>`:`<span class="gone">scos de pe site<small>ca să nu umple memoria site-ului</small></span>`}</div>`});
   return `<div class="list">${out}</div>`}
 function pv(u){const d=document.createElement('div');d.className='pvbox';d.innerHTML=`<video src="${esc(u)}" controls autoplay playsinline></video><button aria-label="Închide">✕</button>`;
   d.onclick=e=>{if(e.target===d||e.target.tagName==='BUTTON')d.remove()};document.body.appendChild(d)}
-function stats(){const all=allDone();
+function stats(){const all={};Object.entries(allDone()).forEach(([k,v])=>{if(!/-long$/.test(k))all[k]=v});  // contorul = reels (videourile lungi au secțiunea lor)
   const ts=Object.values(all),now=new Date(),wk=new Date(now);wk.setHours(0,0,0,0);wk.setDate(wk.getDate()-((wk.getDay()+6)%7));
   const d0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(),n=ts.length,w=ts.filter(t=>t>=wk.getTime()).length,m=ts.filter(t=>t>=d0).length;
   const fmt=x=>x.toLocaleString('ro-RO');
@@ -207,20 +218,20 @@ function list(rs,sched){return `<div class="list">${rs.map(r=>`<div class="row">
   <div style="min-width:0"><div class="t">${sched?`<span class="when">${esc(niceDate(r.date))}</span>`:''}${esc(r.title)}</div><div class="s">${esc(TYPES[r.type]||r.type||'')}${r.duration?' · '+Math.round(r.duration)+'s':''}${r.dl?` · descărcat ${r.dl}×`:''}</div></div>
   <a href="${esc(r.video)}" download onclick="got('${esc(r.id)}')">⬇ ${mb(r.size)}</a></div>`).join('')}</div>`}
 function card(r,i){
-  const ex=expiry(r);
+  const ex=expiry(r),L=isLong(r);
   return `<article class="reel" style="animation-delay:${Math.min(i%100,8)*.06}s">
-    <div class="player" onclick="play(this,'${esc(r.preview||'')}')">${r.poster?`<img src="${esc(r.poster)}" alt="" loading="lazy">`:r.preview?`<video src="${esc(r.preview)}#t=0.5" preload="metadata" muted playsinline></video>`:`<div class="nopv">Previzualizarea a expirat.<br>Video-ul se poate descărca mai jos.</div>`}
-      ${r.preview?'<span class="pb">▶</span>':''}${r.type?`<span class="tag">${esc(TYPES[r.type]||r.type)}</span>`:''}${r.duration?`<span class="len">${Math.round(r.duration)}s</span>`:''}
+    <div class="player${L?' w':''}" onclick="play(this,'${esc(r.preview||'')}')">${r.poster?`<img src="${esc(r.poster)}" alt="" loading="lazy">`:r.preview?`<video src="${esc(r.preview)}#t=0.5" preload="metadata" muted playsinline></video>`:`<div class="nopv">Previzualizarea a expirat.<br>Video-ul se poate descărca mai jos.</div>`}
+      ${r.preview?'<span class="pb">▶</span>':''}${r.type?`<span class="tag">${esc(TYPES[r.type]||r.type)}</span>`:''}${r.duration?`<span class="len">${dur(r.duration)}</span>`:''}
       ${ex?`<span class="cdw">⏳ dispare în <b data-exp="${ex}">${cd(ex)}</b></span>`:''}</div>
-    <div class="title">${esc(r.title)}</div>
+    <div class="title">${esc(r.title)}</div>${L?`<div class="sub">${r.preview?'▶ previzualizare: primele 45 s · ':''}tot videoul: ${dur(r.duration)}, 16:9</div>`:''}
     <div class="box">
-      <a class="dl ${ex?'again':''}" href="${esc(r.video)}" download onclick="got('${esc(r.id)}')">⬇ ${ex?'Descarcă din nou':'Descarcă video'} <small>${mb(r.size)}</small></a>
+      <a class="dl ${ex?'again':''}" href="${esc(r.video)}" download onclick="got('${esc(r.id)}')">⬇ ${ex?'Descarcă din nou':L?'Descarcă tot videoul':'Descarcă video'} <small>${mb(r.size)}</small></a>
       </div></article>`}
 function play(el,src){if(!src||el.classList.contains('on'))return;el.classList.add('on');el.querySelectorAll('img,video').forEach(x=>x.remove());
   const v=document.createElement('video');v.src=src;v.controls=true;v.playsInline=true;v.autoplay=true;el.prepend(v);
   document.querySelectorAll('.player video').forEach(o=>{if(o!==v)o.pause()})}
 function got(id){const g=ls('got')||{};if(!g[id]){g[id]=Date.now();ls('got',g)}
-  if(EXPIRE_MIN)toast(`Descărcarea a pornit. Reelul dispare de pe site în ${EXPIRE_MIN>=60?Math.floor(EXPIRE_MIN/60)+' h'+(EXPIRE_MIN%60?' '+EXPIRE_MIN%60+' min':''):EXPIRE_MIN+' min'}: postează-l până atunci.`,5200);
+  if(EXPIRE_MIN)toast(`Descărcarea a pornit. ${/-long$/.test(id)?'Videoul lung dispare':'Reelul dispare'} de pe site în ${EXPIRE_MIN>=60?Math.floor(EXPIRE_MIN/60)+' h'+(EXPIRE_MIN%60?' '+EXPIRE_MIN%60+' min':''):EXPIRE_MIN+' min'}: postează-l până atunci.`,5200);
   setTimeout(draw,400)}
 function field(text,label){return `<div class="field"><div class="lbl">${esc(label)}</div><div class="tx">${esc(text)}</div><button class="copy" data-c="${esc(text)}" onclick="cp(this)">Copiază</button></div>`}
 function tab(i,p){const d=JSON.parse($('d'+i).textContent);document.querySelectorAll(`#t${i} button`).forEach(b=>b.classList.toggle('on',b.dataset.p===p));
