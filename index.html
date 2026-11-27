@@ -126,7 +126,7 @@ footer{color:var(--dim);font-size:12.5px;text-align:center;padding:40px 0 50px}
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const REPO="aman-andrei-portfolio/dio-shorts", SOCIALS=[{"name": "Kick", "handle": "@dio-official", "url": "https://kick.com/dio-official"}, {"name": "Discord", "handle": "@DIO HUB", "url": "https://discord.gg/ZsY2G9gy43"}, {"name": "TikTok", "handle": "@dio.offiicial", "url": "https://www.tiktok.com/@dio.offiicial"}, {"name": "Instagram", "handle": "@dio_offiicial", "url": "https://www.instagram.com/dio_offiicial/"}], EXPIRE_MIN=+"90"||0, HISTORY_DAYS=+"{{HISTORY_DAYS}}"||14;
+const REPO="aman-andrei-portfolio/dio-shorts", SOCIALS=[{"name": "Kick", "handle": "@dio-official", "url": "https://kick.com/dio-official"}, {"name": "Discord", "handle": "@DIO HUB", "url": "https://discord.gg/ZsY2G9gy43"}, {"name": "TikTok", "handle": "@dio.offiicial", "url": "https://www.tiktok.com/@dio.offiicial"}, {"name": "Instagram", "handle": "@dio_offiicial", "url": "https://www.instagram.com/dio_offiicial/"}], EXPIRE_MIN=+"90"||0, HISTORY_DAYS=+"14"||14;
 const TYPES={amuzant:'Amuzant',funny:'Amuzant',react:'Reacție',reaction:'Reacție',reactie:'Reacție',epic:'Epic',din_suflet:'Din suflet',motivational:'Motivațional',wholesome:'Wholesome',dezbatere:'Discuție'};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -207,7 +207,7 @@ function list(rs,sched){return `<div class="list">${rs.map(r=>`<div class="row">
   <div style="min-width:0"><div class="t">${sched?`<span class="when">${esc(niceDate(r.date))}</span>`:''}${esc(r.title)}</div><div class="s">${esc(TYPES[r.type]||r.type||'')}${r.duration?' · '+Math.round(r.duration)+'s':''}${r.dl?` · descărcat ${r.dl}×`:''}</div></div>
   <a href="${esc(r.video)}" download onclick="got('${esc(r.id)}')">⬇ ${mb(r.size)}</a></div>`).join('')}</div>`}
 function card(r,i){
-  const ex=expiry(r),tt=r.tiktok_caption||'',ig=r.instagram_caption||'';
+  const ex=expiry(r);
   return `<article class="reel" style="animation-delay:${Math.min(i%100,8)*.06}s">
     <div class="player" onclick="play(this,'${esc(r.preview||'')}')">${r.poster?`<img src="${esc(r.poster)}" alt="" loading="lazy">`:r.preview?`<video src="${esc(r.preview)}#t=0.5" preload="metadata" muted playsinline></video>`:`<div class="nopv">Previzualizarea a expirat.<br>Video-ul se poate descărca mai jos.</div>`}
       ${r.preview?'<span class="pb">▶</span>':''}${r.type?`<span class="tag">${esc(TYPES[r.type]||r.type)}</span>`:''}${r.duration?`<span class="len">${Math.round(r.duration)}s</span>`:''}
@@ -215,13 +215,7 @@ function card(r,i){
     <div class="title">${esc(r.title)}</div>
     <div class="box">
       <a class="dl ${ex?'again':''}" href="${esc(r.video)}" download onclick="got('${esc(r.id)}')">⬇ ${ex?'Descarcă din nou':'Descarcă video'} <small>${mb(r.size)}</small></a>
-      <details class="txt"><summary>Text pentru postare</summary>
-        <div class="tabs" id="t${i}"><button data-p="tt" class="on" onclick="tab(${i},'tt')">TikTok</button><button data-p="yt" onclick="tab(${i},'yt')">YouTube</button><button data-p="ig" onclick="tab(${i},'ig')">Instagram</button></div>
-        <div id="p${i}">${field(tt,'Descriere TikTok')}</div>
-        <div class="chips">${(r.hashtags||[]).map(h=>`<span class="chip">${esc(h)}</span>`).join('')}</div>
-        ${(r.hashtags||[]).length?`<button class="allcopy" data-c="${esc((r.hashtags||[]).join(' '))}" onclick="cp(this)">Copiază toate hashtag-urile</button>`:''}
-        <script type="application/json" id="d${i}">${JSON.stringify({tt,ig,ytt:r.yt_title||'',ytd:r.yt_description||''}).replace(/</g,'\\u003c')}<\/script>
-      </details></div></article>`}
+      </div></article>`}
 function play(el,src){if(!src||el.classList.contains('on'))return;el.classList.add('on');el.querySelectorAll('img,video').forEach(x=>x.remove());
   const v=document.createElement('video');v.src=src;v.controls=true;v.playsInline=true;v.autoplay=true;el.prepend(v);
   document.querySelectorAll('.player video').forEach(o=>{if(o!==v)o.pause()})}
