@@ -169,14 +169,14 @@ function draw(){const g=groups();stats();
       (g.new.length?`<div class="grid">${g.new.map((r,i)=>card(r,i)).join('')}</div>`:`<div class="empty"><b>Le-ai luat pe toate 🎉</b>Reelurile noi apar aici singure.</div>`)+`</section>`;
     if(g.soon.length)h+=`<section><div class="sh"><h2>Descărcate · dispar curând</h2><span>postează-le până expiră</span></div><div class="grid">${g.soon.map((r,i)=>card(r,i+100)).join('')}</div></section>`}
   if(VIEW==='descarcate'){h+=g.soon.length?`<section><div class="sh"><h2>Dispar curând</h2><span>${g.soon.length}</span></div><div class="grid">${g.soon.map((r,i)=>card(r,i)).join('')}</div></section>`:'';
-    const hh=history();h+=`<section><div class="sh"><h2>Toate descărcările</h2><span>${hh.length} ${hh.length===1?'reel':'reels'} în total · evidență pe zile</span></div>
+    const hh=dlHistory();h+=`<section><div class="sh"><h2>Toate descărcările</h2><span>${hh.length} ${hh.length===1?'reel':'reels'} în total · evidență pe zile</span></div>
       <div class="hnote">După descărcare, <b>fișierul mare (2K) se șterge de pe site</b> ca să nu se umple memoria site-ului (are o limită de 1 GB). <b>Coperta, titlul și data rămân aici</b> pentru evidență; previzualizarea (▶) se poate vedea ${HISTORY_DAYS} zile.</div>${hist(hh)}</section>`}
   if(VIEW==='programate')h+=`<section><div class="sh"><h2>Programate</h2><span>apar în zilele următoare</span></div>${g.later.length?list(g.later,true):`<div class="empty"><b>Nimic programat</b>Reelurile pentru zilele următoare apar aici.</div>`}</section>`;
   $('main').innerHTML=h}
 // contorul: toate reelurile descărcate vreodată (și cele scoase deja de pe site) + cele de acum
 function allDone(){const all={...DONE};ALL.forEach(r=>{if(r.dl>0&&!all[r.id])all[r.id]=r.downloaded_at||Date.now()});return all}
 // tot ce a descărcat vreodată, cel mai nou primul (și cele scoase deja de pe site: rămân în evidență)
-function history(){const on={};ALL.forEach(r=>on[r.id]=r);
+function dlHistory(){const on={};ALL.forEach(r=>on[r.id]=r);
   return Object.entries(allDone()).map(([id,t])=>{const r=on[id],m=ITEMS[id]||{};
     return {id,t:+t,r,poster:(r&&r.poster)||m.poster,preview:(r&&r.preview)||m.preview,approx:!!m.approx&&!(r&&r.downloaded_at),title:(r&&r.title)||m.title||'Reel',type:(r&&r.type)||m.type,duration:(r&&r.duration)||m.duration}})
     .sort((a,b)=>(a.approx-b.approx)||(b.t-a.t))}
