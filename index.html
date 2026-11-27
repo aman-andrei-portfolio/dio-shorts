@@ -29,6 +29,13 @@ a{color:inherit;text-decoration:none}
 .soc{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:18px 0 0}
 .soc a{font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
 .soc a:hover{color:var(--text)}
+/* contorul de reels descărcate */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 16px;min-width:0}
+.stat b{display:block;font-size:28px;font-weight:850;letter-spacing:-.8px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{display:block;color:var(--dim);font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat.main{background:linear-gradient(135deg,rgba(250,204,21,.16),rgba(250,204,21,.04));border-color:rgba(250,204,21,.35)}
+.stat.main b{color:var(--accent)}
 /* bannerul de descărcare */
 .banner{margin:18px 0 0;display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:16px;background:linear-gradient(135deg,rgba(251,191,36,.16),rgba(251,191,36,.05));border:1px solid rgba(251,191,36,.35);color:#fde68a}
 .banner b{color:#fff}
@@ -87,7 +94,7 @@ details.txt[open] summary{color:var(--text)}
 footer{color:var(--dim);font-size:12.5px;text-align:center;padding:40px 0 50px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#f4f4f5;color:#111;font-weight:700;padding:12px 18px;border-radius:14px;opacity:0;transition:.22s;pointer-events:none;z-index:40;max-width:calc(100vw - 32px);text-align:center;box-shadow:0 20px 50px -20px #000}
 .toast.on{opacity:1;transform:translateX(-50%)}
-@media (max-width:720px){.top .wrap{flex-wrap:wrap;padding-top:10px;padding-bottom:10px}.nav{order:3;width:100%;overflow-x:auto}.grid{grid-template-columns:1fr}.banner{flex-wrap:wrap}.banner .t{margin-left:0}}
+@media (max-width:720px){.stats{gap:8px}.stat{padding:10px 12px}.stat b{font-size:24px}.stat span{white-space:normal;font-size:11.5px;line-height:1.3}.top .wrap{flex-wrap:wrap;padding-top:10px;padding-bottom:10px}.nav{order:3;width:100%;overflow-x:auto}.grid{grid-template-columns:1fr}.banner{flex-wrap:wrap}.banner .t{margin-left:0}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -98,6 +105,7 @@ footer{color:var(--dim);font-size:12.5px;text-align:center;padding:40px 0 50px}
   <nav class="nav" id="nav"></nav>
 </div></div>
 <div class="wrap">
+  <div class="stats" id="stats"></div>
   <div id="banner"></div>
   <main id="main"><section><div class="grid"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div></section></main>
   <div class="soc" id="socials"></div>
@@ -109,7 +117,7 @@ const REPO="aman-andrei-portfolio/dio-shorts", SOCIALS=[{"name": "Kick", "handle
 const TYPES={amuzant:'Amuzant',reactie:'Reacție',epic:'Epic',din_suflet:'Din suflet',motivational:'Motivațional',wholesome:'Wholesome',dezbatere:'Discuție'};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let ALL=[],VIEW=(location.hash||'#nou').slice(1);
+let ALL=[],VIEW=(location.hash||'#nou').slice(1),DONE={};
 function toast(t,ms){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),ms||2200)}
 function today(){const t=new Date();return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`}
 function niceDate(d){const [y,m,dd]=d.split('-').map(Number);const dt=new Date(y,m-1,dd),t=new Date();t.setHours(0,0,0,0);
@@ -132,11 +140,13 @@ async function load(first){
   catch(e){const c=ls('rel');rel=c?c.rel:[]}
   ALL=[];(rel||[]).filter(r=>r.tag_name&&r.tag_name.startsWith('zi-')).forEach(r=>{const dl={};(r.assets||[]).forEach(a=>dl[a.browser_download_url]=a.download_count||0);
     parse(r.body).forEach(x=>ALL.push({...x,date:r.tag_name.slice(3),dl:Math.max(0,(dl[x.video]||0)-(x.dl_base||0))}))});
+  try{const r=await fetch('stats.json?t='+Date.now(),{cache:'no-store'});if(r.ok){DONE=(await r.json()).downloaded||{};ls('stats',DONE)}}
+  catch(e){DONE=ls('stats')||{}}
   $('upd').textContent='actualizat '+new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'});
   draw()}
 function groups(){const g={new:[],soon:[],later:[],old:[]};ALL.forEach(r=>{const s=state(r);if(g[s])g[s].push(r)});
   g.new.sort((a,b)=>b.date.localeCompare(a.date));g.soon.sort((a,b)=>expiry(a)-expiry(b));g.later.sort((a,b)=>a.date.localeCompare(b.date));g.old.sort((a,b)=>b.date.localeCompare(a.date));return g}
-function draw(){const g=groups();
+function draw(){const g=groups();stats();
   if(!['nou','descarcate','programate'].includes(VIEW))VIEW='nou';
   $('nav').innerHTML=[['nou','De descărcat',g.new.length],['descarcate','Descărcate',g.soon.length+g.old.length],['programate','Programate',g.later.length]]
     .map(([k,l,n])=>`<button class="${VIEW===k?'on':''}" onclick="go('${k}')">${l}<em>${n}</em></button>`).join('');
@@ -149,6 +159,13 @@ function draw(){const g=groups();
     h+=`<section><div class="sh"><h2>Descărcate mai demult</h2><span>${g.old.length}</span></div>${g.old.length?list(g.old):`<div class="empty"><b>Nimic aici</b>Reelurile descărcate apar aici.</div>`}</section>`}
   if(VIEW==='programate')h+=`<section><div class="sh"><h2>Programate</h2><span>apar în zilele următoare</span></div>${g.later.length?list(g.later,true):`<div class="empty"><b>Nimic programat</b>Reelurile pentru zilele următoare apar aici.</div>`}</section>`;
   $('main').innerHTML=h}
+// contorul: toate reelurile descărcate vreodată (și cele scoase deja de pe site) + cele de acum
+function stats(){const all={...DONE};ALL.forEach(r=>{if(r.dl>0&&!all[r.id])all[r.id]=Date.now()});
+  const ts=Object.values(all),now=new Date(),wk=new Date(now);wk.setHours(0,0,0,0);wk.setDate(wk.getDate()-((wk.getDay()+6)%7));
+  const d0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(),n=ts.length,w=ts.filter(t=>t>=wk.getTime()).length,m=ts.filter(t=>t>=d0).length;
+  const fmt=x=>x.toLocaleString('ro-RO');
+  $('stats').innerHTML=`<div class="stat main"><b>${fmt(n)}</b><span>${n===1?'reel descărcat':'reels descărcate'}</span></div>`+
+    `<div class="stat"><b>${fmt(m)}</b><span>azi</span></div><div class="stat"><b>${fmt(w)}</b><span>săptămâna asta</span></div>`}
 function go(v){VIEW=v;history.replaceState(null,'','#'+v);draw();window.scrollTo({top:0,behavior:'smooth'})}
 function list(rs,sched){return `<div class="list">${rs.map(r=>`<div class="row"><div class="ph" style="background-image:url('${esc(r.poster||'')}')"></div>
   <div style="min-width:0"><div class="t">${sched?`<span class="when">${esc(niceDate(r.date))}</span>`:''}${esc(r.title)}</div><div class="s">${esc(TYPES[r.type]||r.type||'')}${r.duration?' · '+Math.round(r.duration)+'s':''}${r.dl?` · descărcat ${r.dl}×`:''}</div></div>
