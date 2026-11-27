@@ -120,7 +120,7 @@ function parse(body){const m=/<!--DIO-DATA\s*([\s\S]*?)\s*DIO-DATA-->/.exec(body
 function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
 function cd(ms){const s=Math.max(0,Math.round((ms-Date.now())/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')}
 // descărcat = contorul GitHub (vine cu o mică întârziere) sau apăsat aici, pe acest telefon / calculator
-function expiry(r){if(r.expires_at)return r.expires_at;const got=(ls('got')||{})[r.id];
+function expiry(r){if(r.keep)return null;if(r.expires_at)return r.expires_at;const got=(ls('got')||{})[r.id];
   if(!got||!EXPIRE_MIN||Date.now()-got>10*60000)return null;  // neconfirmat de server în 10 min → nu-l mai arăt ca descărcat
   return got+EXPIRE_MIN*60000}
 function state(r){const ex=expiry(r);if(ex)return ex>Date.now()?'soon':'gone';if(r.dl>0)return 'old';return r.date>today()?'later':'new'}
